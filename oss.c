@@ -1,9 +1,8 @@
 #include "header.h"
 #define timer 100
 
-
+int alrm, total_proc = 18, frametable = 0;
 int setArr[18] = {0};
-int alrm, processCount = 18, frametable = 0;
 
 struct memory_resource {
     long msgString;
@@ -14,9 +13,9 @@ void timekill(int sign_no){
     alrm = 1;
 }
 
-int arrayChecker(int *placementMarker){
+int array_lp(int *placementMarker){
     int inc = 0;
-    for(inc = 0; inc < processCount; inc++){
+    for(inc = 0; inc < total_proc; inc++){
         if(setArr[inc] == 0){
             setArr[inc] = 1;
             *placementMarker = inc;
@@ -26,15 +25,15 @@ int arrayChecker(int *placementMarker){
     return 0;
 }
 
-void timeToFork(unsigned int *seconds, unsigned int *nanoseconds, unsigned int *forkTimeSeconds, unsigned int *forkTimeNanoseconds){
-    unsigned int random = rand()%500000000;
+void time_fork(unsigned int *seconds, unsigned int *ns, unsigned int *forkTimeSeconds, unsigned int *forkTimeNanoseconds){
+    unsigned int rnd = rand()%500000000;
     *forkTimeNanoseconds = 0;
     *forkTimeSeconds = 0;
-    if((random + *nanoseconds) >= 1000000000){
+    if((rnd + *ns) >= 1000000000){
         *forkTimeSeconds += 1;
-        *forkTimeNanoseconds = (random + *nanoseconds) - 1000000000;
+        *forkTimeNanoseconds = (rnd + *ns) - 1000000000;
     } else {
-        *forkTimeNanoseconds = random + *nanoseconds;
+        *forkTimeNanoseconds = rnd + *ns;
     }
     *forkTimeSeconds = *seconds;
 }
@@ -65,7 +64,7 @@ int main (int argc, char *argv[]) {
     int status;
 
     unsigned int *seconds = 0;
-    unsigned int *nanoseconds = 0;
+    unsigned int *ns = 0;
     unsigned int forkTimeSeconds = 0;
     unsigned int forkTimeNanoseconds = 0;
     unsigned int access = 0;
@@ -85,24 +84,24 @@ int main (int argc, char *argv[]) {
     sem_t *semPtr = NULL;
     makeShMemKey(&timeKey, &semKey, &Key);
     makeShMem(&timeid, &semid, &ID, timeKey, semKey, Key);
-    ShMemAttach(&seconds, &nanoseconds, &semPtr, &Pointer, timeid, semid, ID);
+    ShMemAttach(&seconds, &ns, &semPtr, &Pointer, timeid, semid, ID);
     double pageFaults = 0, memoryAccesses = 0, memoryAccessesPerSecond = 0;
     float childRequestAddress = 0;
     signal(SIGALRM, timekill);
     alarm(5);
     do {
         if(ifork == 0){
-            timeToFork(seconds, nanoseconds, &forkTimeSeconds, &forkTimeNanoseconds);
+            time_fork(seconds, ns, &forkTimeSeconds, &forkTimeNanoseconds);
             ifork = 1;
         }
-        *nanoseconds += 50000;
-        if(*nanoseconds >= 1000000000){
+        *ns += 50000;
+        if(*ns >= 1000000000){
             *seconds += 1;
-            *nanoseconds = 0;
+            *ns = 0;
             memoryAccessesPerSecond = (memoryAccesses/ *seconds);
         }
-        if(((*seconds == forkTimeSeconds) && (*nanoseconds >= forkTimeNanoseconds)) || (*seconds > forkTimeSeconds)){
-            if(arrayChecker(&placementMarker) == 1){
+        if(((*seconds == forkTimeSeconds) && (*ns >= forkTimeNanoseconds)) || (*seconds > forkTimeSeconds)){
+            if(array_lp(&placementMarker) == 1){
                 forked++;
                 ifork = 0;
                 rsg_manage_args(sharedTimeMem, sharedSemMem, sharedPositionMem, ShrdMem, sharedLimitMem, sharedPercentageMem, timeid, semid, ID, placementMarker, max_proc, percentage);
@@ -117,7 +116,7 @@ int main (int argc, char *argv[]) {
 
             }
         }
-        for(i = 0; i < processCount; i++){
+        for(i = 0; i < total_proc; i++){
 
             if(setArr[i] == 1){
 
@@ -131,11 +130,11 @@ int main (int argc, char *argv[]) {
                         address = atoi(childMsg);
                         strcpy(requestType, strtok(NULL, " "));
                         if(atoi(requestType) == 0){
-                            fprintf(fp, "be read at time %d : %d\n", *seconds, *nanoseconds);
-                            printf("be read at time %d : %d\n", *seconds, *nanoseconds);
+                            fprintf(fp, "be read at time %d : %d\n", *seconds, *ns);
+                            printf("be read at time %d : %d\n", *seconds, *ns);
                         }else{
-                            fprintf(fp, "be written at time %d : %d\n", *seconds, *nanoseconds);
-                            printf("be written at time %d : %d\n", *seconds, *nanoseconds);
+                            fprintf(fp, "be written at time %d : %d\n", *seconds, *ns);
+                            printf("be written at time %d : %d\n", *seconds, *ns);
                         }
                         childRequestAddress = (atoi(childMsg))/1000;
                         childRequestAddress = (int)(floor(childRequestAddress));
@@ -173,8 +172,8 @@ int main (int argc, char *argv[]) {
                                     (*ArrayPointer)[i]->tablesize[(int)childRequestAddress] = frametable;
                                     frameTable[frametable][0] = (*ArrayPointer)[i]->pid;
                                     frameTable[frametable][2] = atoi(requestType);
-                                    fprintf(fp, "OSS: Address %d in frame %d giving data to P%d at time %d : %d\n", address, frametable, i, *seconds, *nanoseconds);
-                                    printf("OSS: Address %d in frame %d giving data to P%d at time %d : %d\n", address, frametable, i, *seconds, *nanoseconds);
+                                    fprintf(fp, "OSS: Address %d in frame %d giving data to P%d at time %d : %d\n", address, frametable, i, *seconds, *ns);
+                                    printf("OSS: Address %d in frame %d giving data to P%d at time %d : %d\n", address, frametable, i, *seconds, *ns);
                                     frametable++;
                                     if(frametable == 256){
                                         frametable = 0;
@@ -182,21 +181,21 @@ int main (int argc, char *argv[]) {
                                     requests++;
                                 }
                                 access +=  15000000;
-                                *nanoseconds += 15000000;
+                                *ns += 15000000;
                             } else {
                                 memoryAccesses++;
                                 (*ArrayPointer)[i]->tablesize[(int)childRequestAddress] = frametable;
                                 frameTable[frametable][0] = (*ArrayPointer)[i]->pid;
                                 frameTable[frametable][1] = 0;
                                 frameTable[frametable][2] = atoi(requestType);
-                                fprintf(fp, "OSS: Address %d in frame %d giving data to P%d at time %d : %d\n", address, frametable, i, *seconds, *nanoseconds);
-                                printf("OSS: Address %d in frame %d giving data to P%d at time %d : %d\n", address, frametable, i, *seconds, *nanoseconds);
+                                fprintf(fp, "OSS: Address %d in frame %d giving data to P%d at time %d : %d\n", address, frametable, i, *seconds, *ns);
+                                printf("OSS: Address %d in frame %d giving data to P%d at time %d : %d\n", address, frametable, i, *seconds, *ns);
                                 frametable++;
                                 if(frametable == 256){
                                     frametable = 0;
                                 }
                                 access  += 10000000;
-                                *nanoseconds += 10000000;
+                                *ns += 10000000;
                                 requests++;
                                 fprintf(fp, "OSS: Dirty bit is set to %d and adding aditional time to the clock\n", atoi(requestType));
                                 printf("OSS: Dirty bit is set to %d and adding aditional time to the clock\n", atoi(requestType));
@@ -206,7 +205,7 @@ int main (int argc, char *argv[]) {
                             memoryAccesses++;
                             frameTable[(*ArrayPointer)[i]->tablesize[(int)childRequestAddress]][1] = 1;
                             frameTable[(*ArrayPointer)[i]->tablesize[(int)childRequestAddress]][2] = atoi(requestType); 
-                            *nanoseconds += 10000000;
+                            *ns += 10000000;
                             access +=  10000000;
                             requests++;
                             fprintf(fp, "OSS: Dirty bit is set to %d  and adding aditional time to the clock\n", atoi(requestType));
@@ -255,9 +254,9 @@ int main (int argc, char *argv[]) {
 
     }
     while((*seconds < timer+10000) && alrm == 0 && forked < 100);
-    fprintf(fp, "\nCurrent memory layout at time %d:%d is:\n", *seconds, *nanoseconds);
+    fprintf(fp, "\nCurrent memory layout at time %d:%d is:\n", *seconds, *ns);
     fprintf(fp, "Occupied DirtyBit SecondChance NextFrame\n");
-    printf("\nCurrent memory layout at time %d:%d is:\n", *seconds, *nanoseconds);
+    printf("\nCurrent memory layout at time %d:%d is:\n", *seconds, *ns);
     printf("Occupied DirtyBit SecondChance NextFrame\n");
     for (int i = 0; i < 256; i++) {
         if (frameTable[i][0] != 0) {

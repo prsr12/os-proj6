@@ -65,13 +65,13 @@ void makeShMem(int *timeid, int *semid, int*ID, key_t timeKey, key_t semKey, key
         *ID = shmget(Key, (sizeof(memory_manager) *2),0666|IPC_CREAT);
 
         if(*timeid == -1){
-                printf("Timed ID: %s\n", strerror(errno));
+                printf("tid: %s\n", strerror(errno));
         }
         if(*semid == -1){
-                printf("Semaphore ID: %s\n", strerror(errno));
+                printf("sid: %s\n", strerror(errno));
         }
         if(*ID == -1){
-                printf("Resource ID:  %s\n", strerror(errno));
+                printf("rid:  %s\n", strerror(errno));
         }
 };
 
@@ -90,14 +90,14 @@ void rsg_manage_args(char *sharedTimeMem, char *sharedSemMem, char*sharedPositio
         snprintf(sharedPercentageMem, sizeof(sharedPercentageMem)+25, "%d", percentage);
 };
 
-void ShMemAttach(unsigned int **seconds, unsigned int **nanoseconds, sem_t **semaphore, memory_manager **Pointer, int timeid, int semid, int ID){
+void ShMemAttach(unsigned int **seconds, unsigned int **ns, sem_t **semaphore, memory_manager **Pointer, int timeid, int semid, int ID){
         *seconds = (unsigned int*)shmat(timeid, NULL, 0);
         if(**seconds == -1){
                 printf("Seconds %s\n", strerror(errno));
         }
-        *nanoseconds = *seconds + 1;
-        if(**nanoseconds == -1){
-                printf("Nanoseconds %s\n", strerror(errno));
+        *ns = *seconds + 1;
+        if(**ns == -1){
+                printf("ns %s\n", strerror(errno));
         }
         *semaphore = (sem_t*)shmat(semid, NULL, 0);
         if(*semaphore == (void*)-1){

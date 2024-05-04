@@ -5,15 +5,15 @@ struct memory_resource {
     char msgChar[100];
 } message;
 
-void randomTimer(unsigned int *seconds, unsigned int *nanoseconds, unsigned int *eventTimeSeconds, unsigned int *eventTimeNanoseconds){
-        unsigned int random = rand()%500000000;
+void randomTimer(unsigned int *seconds, unsigned int *ns, unsigned int *eventTimeSeconds, unsigned int *eventTimeNanoseconds){
+        unsigned int rnd = rand()%500000000;
         *eventTimeNanoseconds = 0;
         *eventTimeSeconds = 0;
-        if((random + *nanoseconds) >=1000000000){
+        if((rnd + *ns) >=1000000000){
                 *eventTimeSeconds += 1;
-                *eventTimeNanoseconds = (random + *nanoseconds) - 1000000000;
+                *eventTimeNanoseconds = (rnd + *ns) - 1000000000;
         } else {
-                *eventTimeNanoseconds = random + *nanoseconds;
+                *eventTimeNanoseconds = rnd + *ns;
         }
         *eventTimeSeconds = *seconds;
 }
@@ -32,17 +32,17 @@ int main(int argc, char *argv[]) {
         pid_t pid = getpid();
         sem_t *semPtr;
         memory_manager *Pointer;
-        unsigned int *seconds = 0, *nanoseconds = 0, eventTimeSeconds = 0, eventTimeNanoseconds = 0, requests = 0;
-        ShMemAttach(&seconds, &nanoseconds, &semPtr, &Pointer, timeid, semid, ID);
+        unsigned int *seconds = 0, *ns = 0, eventTimeSeconds = 0, eventTimeNanoseconds = 0, requests = 0;
+        ShMemAttach(&seconds, &ns, &semPtr, &Pointer, timeid, semid, ID);
         message.msgString = pid;
         message.msgString = 12345;
-        randomTimer(seconds, nanoseconds, &eventTimeSeconds, &eventTimeNanoseconds);
+        randomTimer(seconds, ns, &eventTimeSeconds, &eventTimeNanoseconds);
         while(complete == 0){
-                if((*seconds == eventTimeSeconds && *nanoseconds >= eventTimeNanoseconds) || *seconds > eventTimeSeconds){
+                if((*seconds == eventTimeSeconds && *ns >= eventTimeNanoseconds) || *seconds > eventTimeSeconds){
                         event = rand()%99;
                         request = rand()%32001;
                         requests++;
-                        randomTimer(seconds, nanoseconds, &eventTimeSeconds, &eventTimeNanoseconds);
+                        randomTimer(seconds, ns, &eventTimeSeconds, &eventTimeNanoseconds);
                         if(requests == limit && event < 75){
                                 message.msgString = (int)pid;
                                 sprintf(message.msgChar,"%d", 99999);

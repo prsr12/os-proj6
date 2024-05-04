@@ -25,15 +25,15 @@ int main(int argc, char *argv[]) {
         int msgid = msgget(msgKey, 0666 | IPC_CREAT);
         int timeid = atoi(argv[1]);
         int semid = atoi(argv[2]);
-        int rscID = atoi(argv[4]);
+        int ID = atoi(argv[4]);
         int limit = atoi(argv[5]);
         int percentage = atoi(argv[6]);
         int event = 0;
         pid_t pid = getpid();
         sem_t *semPtr;
-        memory_manager *rscPointer;
+        memory_manager *Pointer;
         unsigned int *seconds = 0, *nanoseconds = 0, eventTimeSeconds = 0, eventTimeNanoseconds = 0, requests = 0;
-        ShMemAttach(&seconds, &nanoseconds, &semPtr, &rscPointer, timeid, semid, rscID);
+        ShMemAttach(&seconds, &nanoseconds, &semPtr, &Pointer, timeid, semid, ID);
         message.msgString = pid;
         message.msgString = 12345;
         randomTimer(seconds, nanoseconds, &eventTimeSeconds, &eventTimeNanoseconds);
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
 
         shmdt(seconds);
         shmdt(semPtr);
-        shmdt(rscPointer);
+        shmdt(Pointer);
         shmctl(msgid, IPC_RMID, NULL);
         exit (0);
 }

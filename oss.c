@@ -1,8 +1,9 @@
 #include "header.h"
 #define timer 100
 
-int alrm, processCount = 18, frametable = 0;
+
 int setArr[18] = {0};
+int alrm, processCount = 18, frametable = 0;
 
 struct memory_resource {
     long msgString;
